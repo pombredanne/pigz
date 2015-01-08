@@ -1,6 +1,6 @@
 /* pigz.c -- parallel implementation of gzip
- * Copyright (C) 2007, 2008, 2009, 2010, 2011, 2012, 2013 Mark Adler
- * Version 2.3.1  xx Mar 2013  Mark Adler
+ * Copyright (C) 2007-2014 Mark Adler
+ * Version 2.3.2  xx Jan 2014  Mark Adler
  */
 
 /*
@@ -154,10 +154,18 @@
                        Do not decompress concatenated zlib streams (just gzip)
                        Add option for compression level 11 to use zopfli
                        Fix handling of junk after compressed data
-   2.3.1  xx Mar 2013  -
+   2.3.1   9 Oct 2013  Fix builds of pigzt and pigzn to include zopfli
+                       Add -lm, needed to link log function on some systems
+                       Respect LDFLAGS in Makefile, use CFLAGS consistently
+                       Add memory allocation tracking
+                       Fix casting error in uncompressed length calculation
+                       Update zopfli to Mar 10, 2013 Google state
+                       Support zopfli in single thread case
+                       Add -F, -I, -M, and -O options for zopfli tuning
+   2.3.2  xx Jan 2014  -
  */
 
-#define VERSION "pigz 2.3.1\n"
+#define VERSION "pigz 2.3.2\n"
 
 /* To-do:
     - make source portable for Windows, VMS, etc. (see gzip source code)
@@ -470,7 +478,6 @@ local struct {
     int procs;              /* maximum number of compression threads (>= 1) */
     int setdict;            /* true to initialize dictionary in each thread */
     size_t block;           /* uncompressed input size per thread (>= 32K) */
-    int warned;             /* true if a warning has been given */
 
     /* saved gzip/zip header data for decompression, testing, and listing */
     time_t stamp;               /* time stamp from gzip header */
@@ -511,7 +518,6 @@ local int complain(char *fmt, ...)
         va_end(ap);
         putc('\n', stderr);
         fflush(stderr);
-        g.warned = 1;
     }
     return 0;
 }
@@ -1416,7 +1422,7 @@ local void compress_thread(void *dummy)
 #if ZLIB_VERNUM >= 0x1260
     int bits;                       /* deflate pending bits */
 #endif
-    struct space *temp;             /* temporary space for zopfli input */
+    struct space *temp = NULL;      /* temporary space for zopfli input */
     z_stream strm;                  /* deflate stream */
 
     (void)dummy;
@@ -3921,7 +3927,6 @@ int main(int argc, char **argv)
     /* initialize globals */
     g.outf = NULL;
     g.first = 1;
-    g.warned = 0;
     g.hname = NULL;
 
     /* save pointer to program name for error messages */
@@ -4012,5 +4017,5 @@ int main(int argc, char **argv)
     /* done -- release resources, show log */
     new_opts();
     log_dump();
-    return g.warned ? 2 : 0;
+    return 0;
 }

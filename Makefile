@@ -1,6 +1,6 @@
 CC=cc
 CFLAGS=-O3 -Wall -Wextra
-
+# use gcc and gmake on Solaris
 
 pigz: pigz.o yarn.o zopfli/deflate.o zopfli/blocksplitter.o zopfli/tree.o zopfli/lz77.o zopfli/cache.o zopfli/hash.o zopfli/util.o zopfli/squeeze.o zopfli/katajainen.o
 	$(CC) $(LDFLAGS) -o pigz $^ -lpthread -lz -lm
@@ -58,7 +58,7 @@ test: pigz
 	(printf "w" | gzip ; printf "x") | ./pigz -cdf | wc -c | test `cat` -eq 2
 	(printf "w" | gzip ; printf "xy") | ./pigz -cdf | wc -c | test `cat` -eq 3
 	(printf "w" | gzip ; printf "xyz") | ./pigz -cdf | wc -c | test `cat` -eq 4
-	-@if test "`whereis compress | grep /`" != ""; then \
+	-@if test "`which compress | grep /`" != ""; then \
 	  echo 'compress -f < pigz.c | ./unpigz | cmp - pigz.c' ;\
 	  compress -f < pigz.c | ./unpigz | cmp - pigz.c ;\
 	fi
